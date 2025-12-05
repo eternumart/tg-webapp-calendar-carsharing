@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Выбор даты</title>
+		<script src="https://telegram.org/js/telegram-web-app.js"></script>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+		<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+		<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+		<link rel="stylesheet" href="index.css" />
+	</head>
+	<body class="page">
+		<h3 class="title">Выберите дату и время</h3>
+		<input class="calendar" type="text" id="calendar" />
+		<button class="submit">Выбрать</button>
+
+		<script>
+			flatpickr(".calendar", {
+				locale: "ru",
+				dateFormat: "d.m.Y H:i",
+				enableTime: true,
+				time_24hr: true,
+				inline: true,
+			});
+
+			const button = document.querySelector(".submit");
+			button.addEventListener("click", sendDate);
+			const tg = window.Telegram.WebApp;
+			tg.ready();
+			tg.expand();
+
+			console.log("🧪 TG WebApp загружен", tg);
+			console.log("🔍 initDataUnsafe:", tg.initDataUnsafe);
+
+			function sendDate() {
+				const date = document.getElementById("calendar").value;
+				if (!date) return;
+				const parts = date.split("-");
+
+				const formatted = parts[0].split(" ");
+				const result = {
+					time: formatted[1],
+					date: formatted[0],
+				};
+
+				console.log("📤 Отправка даты в Telegram:", result);
+				tg.sendData(JSON.stringify(result));
+			}
+		</script>
+	</body>
+</html>
