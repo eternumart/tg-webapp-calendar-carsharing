@@ -11,12 +11,16 @@
 		<link rel="stylesheet" href="index.css" />
 	</head>
 	<body class="page">
-		<h3 class="title">Выберите дату и время начала бронирования</h3>
+		<h3 class="title">Выберите дату и время начала</h3>
 		<input class="calendar" type="text" id="calendar" />
-		<button class="submit">Выбрать</button>
+		<button class="submit">Выбрать начало</button>
 
 		<script>
-			flatpickr(".calendar", {
+			const title = document.querySelector(".title");
+			const calendarInput = document.getElementById("calendar");
+			const button = document.querySelector(".submit");
+
+			const picker = flatpickr(".calendar", {
 				locale: "ru",
 				dateFormat: "d.m.Y H:i",
 				enableTime: true,
@@ -24,8 +28,7 @@
 				inline: true,
 			});
 
-			const button = document.querySelector(".submit");
-			button.addEventListener("click", sendDate);
+			button.addEventListener("click", handleSubmit);
 			const tg = window.Telegram.WebApp;
 			tg.ready();
 			tg.expand();
@@ -33,19 +36,56 @@
 			console.log("🧪 TG WebApp загружен", tg);
 			console.log("🔍 initDataUnsafe:", tg.initDataUnsafe);
 
-			function sendDate() {
-				const date = document.getElementById("calendar").value;
-				if (!date) return;
-				const parts = date.split("-");
+			let startDateSelection = null;
+			let selectingEnd = false;
 
-				const formatted = parts[0].split(" ");
+			function parseDateTime(value) {
+				const parts = value.trim().split(" ");
+				if (parts.length < 2) return null;
+				return {
+					date: parts[0],
+					time: parts[1],
+				};
+			}
+
+			function resetPicker() {
+				picker.clear();
+				calendarInput.value = "";
+			}
+
+			function handleSubmit() {
+				const dateValue = calendarInput.value;
+				if (!dateValue) return;
+
+				const parsed = parseDateTime(dateValue);
+				if (!parsed) return;
+
+				// First click: save start date/time and switch UI to end selection
+				if (!selectingEnd) {
+					startDateSelection = parsed;
+					selectingEnd = true;
+					title.textContent = "Выберите дату и время окончания";
+					button.textContent = "Отправить диапазон";
+					resetPicker();
+					console.log("✅ Стартовая дата сохранена:", startDateSelection);
+					return;
+				}
+
+				// Second click: send both start and end to Telegram
 				const result = {
-					time: formatted[1],
-					date: formatted[0],
+					startDate: startDateSelection,
+					endDate: parsed,
 				};
 
 				console.log("📤 Отправка даты в Telegram:", result);
 				tg.sendData(JSON.stringify(result));
+
+				// Reset to initial state for a new selection
+				selectingEnd = false;
+				startDateSelection = null;
+				title.textContent = "Выберите дату и время начала";
+				button.textContent = "Выбрать начало";
+				resetPicker();
 			}
 		</script>
 	</body>
